@@ -27,7 +27,7 @@ Facebook detection uses body fingerprinting (soft-404 markers) because Facebook 
 ## Installation
 
 ```bash
-git clone https://github.com/HarisAidhinR/blh-scanner.git
+git clone https://github.com/HarisAidhin/blh-scanner.git
 cd blh-scanner
 pip install -r requirements.txt
 ```
