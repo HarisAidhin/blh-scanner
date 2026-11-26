@@ -429,7 +429,6 @@ def generate_html_report(results: list, total_targets: int, output_path: str):
     total_findings = sum(len(r["findings"]) for r in vulnerable)
     vuln_count = len(vulnerable)
 
-    # Platform breakdown
     platform_count = {}
     for r in vulnerable:
         for f in r["findings"]:
@@ -443,7 +442,7 @@ def generate_html_report(results: list, total_targets: int, output_path: str):
         )
         chips_html = f'<div class="chips">{chips}</div>'
 
-    # Target cards
+    
     cards_html = ""
     for r in vulnerable:
         findings_html = ""
