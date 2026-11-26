@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 """
 Broken Link Hijacking (BLH) Mass Scanner | By HarisAidhinR | - Social Media
 Hanya menampilkan target yang RENTAN.
@@ -27,9 +27,7 @@ except ImportError:
     print("[!] Install 'requests': pip install requests")
     sys.exit(1)
 
-# ============================================================
-# WARNA TERMINAL
-# ============================================================
+
 class C:
     RED     = "\033[91m"
     GREEN   = "\033[92m"
@@ -48,9 +46,6 @@ def log(msg, color=C.WHITE, bold=False):
     print(f"{prefix}{color}{msg}{C.RESET}")
 
 
-# ============================================================
-# KONFIGURASI
-# ============================================================
 SOCIAL_PATTERNS = {
     "twitter":   r"(?:twitter\.com|x\.com)/[\w]+",
     "facebook":  r"facebook\.com/[\w.]+",
@@ -62,6 +57,7 @@ SOCIAL_PATTERNS = {
     "telegram":  r"(?:t\.me|telegram\.me)/[\w]+",
 }
 
+
 FACEBOOK_BROKEN_MARKERS = [
     "This content isn't available at the moment",
     "This content isn't available right now",
@@ -70,13 +66,19 @@ FACEBOOK_BROKEN_MARKERS = [
     "Konten ini tidak tersedia",
 ]
 
+
+INSTAGRAM_BROKEN_MARKERS = [
+    "Maaf, halaman ini tidak tersedia",
+    "Tautan yang Anda ikuti mungkin rusak",
+    "Sorry, this page isn't available",
+    "The link you followed may be broken",
+]
+
 BROKEN_STATUS_CODES = {404, 410}
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 
-# ============================================================
-# UTILITAS
-# ============================================================
+
 def normalize_url(url: str) -> str:
     url = url.strip()
     if not url or url.startswith("#"):
@@ -112,14 +114,24 @@ def is_facebook_broken(url: str, body: str) -> bool:
     return any(m.lower() in lowered for m in FACEBOOK_BROKEN_MARKERS)
 
 
+def is_instagram_broken(url: str, body: str) -> bool:
+    if not re.search(SOCIAL_PATTERNS["instagram"], url, re.IGNORECASE):
+        return False
+    lowered = body.lower()
+    return any(m.lower() in lowered for m in INSTAGRAM_BROKEN_MARKERS)
+
+
 def check_link_status(url: str, timeout: int = 15) -> dict:
     try:
         resp = requests.get(url, timeout=timeout, allow_redirects=True,
                             verify=False, headers=HEADERS)
         broken = resp.status_code in BROKEN_STATUS_CODES
+        
+        
         if not broken and resp.status_code == 200:
-            if is_facebook_broken(url, resp.text):
+            if is_facebook_broken(url, resp.text) or is_instagram_broken(url, resp.text):
                 broken = True
+                
         return {"url": url, "status_code": resp.status_code, "broken": broken, "error": None}
     except ConnectionError:
         return {"url": url, "status_code": None, "broken": True, "error": "connection_failed"}
@@ -140,16 +152,18 @@ def analyze_hijackability(info: dict) -> dict | None:
         return {"url": url, "platform": platform, "risk": "CRITICAL", "status_code": None,
                 "reason": "Domain tidak merespons (kemungkinan unregistered / expired)"}
 
-    reason = ("Profil Facebook menampilkan 'content isn't available' (akun dihapus / dibatasi)"
-              if platform == "facebook"
-              else f"Profil {platform} mengembalikan {info['status_code']} (handle mungkin tersedia)")
+    if platform == "facebook":
+        reason = "Profil Facebook menampilkan 'content isn't available' (akun dihapus / dibatasi)"
+    elif platform == "instagram":
+        reason = "Profil Instagram menampilkan 'halaman ini tidak tersedia' (akun dihapus / dibatasi)"
+    else:
+        reason = f"Profil {platform} mengembalikan {info['status_code']} (handle mungkin tersedia)"
+
     return {"url": url, "platform": platform, "risk": "HIGH",
             "status_code": info["status_code"], "reason": reason}
 
 
-# ============================================================
-# SCAN
-# ============================================================
+
 def scan_target(target: str, timeout: int) -> dict:
     result = {"target": target, "status": "success",
               "total_social_links": 0, "findings": [], "error": None}
@@ -174,9 +188,7 @@ def scan_target(target: str, timeout: int) -> dict:
     return result
 
 
-# ============================================================
-# TAMPILAN TERMINAL
-# ============================================================
+
 def print_finding(finding: dict):
     platform = finding["platform"].upper()
     risk = finding["risk"]
@@ -196,9 +208,7 @@ def print_finding(finding: dict):
     print(f"      {C.DIM}↳ {finding['reason']}{C.RESET}")
 
 
-# ============================================================
-# GENERATE HTML REPORT (DARK ELEGAN)
-# ============================================================
+
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -516,10 +526,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Contoh:\n"
-            "  python3 blh_social_scanner.py -u https://target.com\n"
-            "  python3 blh_social_scanner.py -l targets.txt -o hasil.json\n"
-            "  python3 blh_social_scanner.py -l targets.txt --html report.html\n"
-            "  python3 blh_social_scanner.py -l targets.txt -o hasil.json --html report.html\n"
+            "  python3 blh.py -u https://target.com\n"
+            "  python3 blh.py -l targets.txt -o hasil.json\n"
+            "  python3 blh.py -l targets.txt --html report.html\n"
+            "  python3 blh.py -l targets.txt -o hasil.json --html report.html\n"
         ),
     )
     group = parser.add_mutually_exclusive_group(required=True)
